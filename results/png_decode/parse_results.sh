@@ -5,12 +5,12 @@ output=arm.csv
 
 echo "i.MX 6ULZ(Arm Cortex-A7)" > $output
 echo "${frequency}MHz" >> $output
-echo "entrada, ciclos, tempo(ms)\n" >> $output
+echo "entrada, ciclos, tempo(ms)" >> $output
 for file in $( ls ./arm/ )
 do
     while IFS=" " read -r property value remainder
     do
-        if [ "$property" = "host_inst_rate" ] 
+        if [ "$property" = "host_inst_rate" ]
         then
             time=$(awk -v val=$value -v freq=$frequency 'BEGIN { print val/freq }')
             echo "$(basename ${file%.*}), $value, $time" >> $output
