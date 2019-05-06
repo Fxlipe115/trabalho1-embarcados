@@ -1,5 +1,5 @@
-adsp-bf533
-600MHz
+#adsp-bf533
+#600MHz
 entrada, ciclos, tempo(ms)
 10, 273446, 455.743333333
 100, 303706, 506.176666666

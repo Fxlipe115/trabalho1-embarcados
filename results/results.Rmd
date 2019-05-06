@@ -1,0 +1,175 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+
+```{r}
+library(ggplot2)
+library(cowplot)
+require(scales)
+
+sha256arm <- read.csv("./sha256/arm.csv", comment.char = "#")
+sha256arm$Arquitetura <- "i.MX 6ULZ(Arm Cortex-A7)"
+sha256blackfin <- read.csv("./sha256/blackfin.csv", comment.char = "#")
+sha256blackfin$Arquitetura <- "adsp-bf533"
+sha2568051 <- read.csv("./sha256/8051.csv", comment.char = "#")
+sha2568051$Arquitetura <- "8051"
+sha2568051$tempo.ms. <- sha2568051$ciclos/40
+sha256 <- merge(sha256arm, sha256blackfin, all = TRUE)[-9,]
+sha256 <- merge(sha256, sha2568051, all = TRUE)
+
+ggplot(sha256, aes(x=entrada, y=tempo.ms., colour=Arquitetura)) + 
+  labs(title = "Tempo de execução do SHA256", x="Tamanho da entrada", y="Tempo(ms)") +
+  geom_point() + geom_line() +
+  scale_x_log10()
+
+```
+```{r}
+bitcountarm <- read.csv("./bitcount/arm.csv", comment.char = "#")
+bitcountarm$Arquitetura <- "i.MX 6ULZ(Arm Cortex-A7)"
+bitcountarm$cost <- 7.05
+bitcountarm$power <- 400
+bitcountblackfin <- read.csv("./bitcount/blackfin.csv", comment.char = "#")
+bitcountblackfin$Arquitetura <- "adsp-bf533"
+bitcountblackfin$cost <- 12.56
+bitcountblackfin$power <- 472
+bitcount8051 <- read.csv("./bitcount/8051.csv", comment.char = "#")
+bitcount8051$tempo.ms. <- bitcount8051$ciclos/40
+bitcount8051$Arquitetura <- "T89C51CC01"
+bitcount8051$cost <- 6.49
+bitcount8051$power <- 1000
+bitcount.no8051 <- merge(bitcountarm, bitcountblackfin, all = TRUE)[-9,]
+bitcount <- merge(bitcount.no8051, bitcount8051, all = TRUE)[-13,]
+
+bitcount.main <- ggplot(bitcount, aes(x=entrada, y=tempo.ms./1000, colour=Arquitetura)) + 
+  labs(title = "Tempo de execução do bitcount", x="Tamanho da entrada", y="Tempo(s)") +
+  geom_point() + geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_log10()
+bitcount.zoom <- ggplot(bitcount.no8051, aes(x=entrada, y=tempo.ms., colour=Arquitetura)) + 
+  labs(x="Tamanho da entrada", y="Tempo(ms)") +
+  geom_point() + geom_line() +
+  scale_color_manual(values=c("#f8766d", "#00ba38")) + # "#619cff"
+  scale_x_log10()
+
+bitcount.plot <- ggdraw() +
+  draw_plot(bitcount.main) +
+  draw_plot(bitcount.zoom, x = .65, y = .08, width = .7, height = .3)
+
+bitcount.plot
+ggsave(bitcount.plot, filename = "./bitcount/bitcount.pdf")
+```
+
+```{r}
+pngarm <- read.csv("./png_decode/arm.csv", comment.char = "#")
+pngarm$Arquitetura <- "i.MX 6ULZ(Arm Cortex-A7)"
+pngblackfin <- read.csv("./png_decode/blackfin.csv", comment.char = "#")
+pngblackfin$Arquitetura <- "adsp-bf533"
+png8051 <- read.csv("./png_decode/8051.csv", comment.char = "#")
+png8051$Arquitetura <- "8051"
+png8051$tempo.ms. <- png8051$ciclos/40
+png <- merge(pngarm, pngblackfin, all = TRUE)
+png <- merge(png, png8051, all = TRUE)
+
+png10x10 <- png[which(png$entrada=="10x10"),]
+png10x10$Arquitetura <- factor(png10x10$Arquitetura, levels = png10x10$Arquitetura[order(png10x10$tempo.ms.)])
+
+png.plot <- ggplot(png10x10, aes(x=Arquitetura, y=tempo.ms./1000, fill=Arquitetura)) + 
+  labs(title = "Tempo de execução do PNG decode", x="Arquitetura", y="Tempo(s)") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  geom_bar(stat = "identity") + 
+  scale_y_continuous(labels = scales::comma)
+
+png.plot
+ggsave(png.plot, filename = "./png_decode/png.pdf")
+```
+
+```{r}
+sha256$tempoparidade <- sha256$ciclos/1000
+
+ggplot(sha256, aes(x=entrada, y=tempoparidade, colour=Arquitetura)) + 
+  labs(title = "Tempo de execução do SHA256(paridade de frequência)", x="Tamanho da entrada", y="Tempo(ms)") +
+  geom_point() + geom_line() +
+  scale_x_log10()
+```
+
+```{r}
+bitcount$tempoparidade <- bitcount$ciclos/1000
+
+bitcountpar.plot <- ggplot(bitcount, aes(x=entrada, y=tempoparidade/1000, colour=Arquitetura)) + 
+  labs(title = "Tempo de execução do bitcount com paridade de frequência", x="Tamanho da entrada", y="Tempo(s)") +
+  geom_point() + geom_line() +
+  scale_x_log10()
+
+bitcountpar.plot
+ggsave(bitcountpar.plot, filename = "./bitcount/bitcountpar.pdf")
+```
+
+```{r}
+png$tempoparidade <- png$ciclos/1000
+
+png113x135 <- png[which(png$entrada=="113x135"),]
+png113x135$Arquitetura <- factor(png113x135$Arquitetura, levels = png113x135$Arquitetura[order(png113x135$tempoparidade)])
+
+ggplot(png113x135, aes(x=Arquitetura, y=tempoparidade/1000, fill=Arquitetura)) + 
+  labs(title = "Tempo de execução do PNG decode", x="Arquitetura", y="Tempo(s)") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  geom_bar(stat = "identity") + 
+  scale_y_continuous(labels = scales::comma)
+```
+
+```{r}
+bitcount.1000 <- bitcount[which(bitcount$entrada==1000),]
+bitcount.1000$Arquitetura <- factor(bitcount.1000$Arquitetura, levels = bitcount.1000$Arquitetura[order(bitcount.1000$tempo.ms.*bitcount.1000$cost)])
+
+bitcount.costbenefit.plot <- ggplot(bitcount.1000, aes(x=Arquitetura, y=cost*tempo.ms., fill=Arquitetura)) + 
+  labs(title = "Relação tempo-custo inicial para 1000 iterações", x="Arquitetura", y="tempo*custo(ms*$)") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  geom_bar(stat = "identity") + 
+  scale_y_continuous(labels = scales::comma)
+
+bitcount.costbenefit.plot
+ggsave(bitcount.costbenefit.plot, filename = "./bitcount/bitcountcostbenefit.pdf")
+```
+
+```{r}
+bitcount.1000.par <- bitcount[which(bitcount$entrada==1000),]
+bitcount.1000.par$Arquitetura <- factor(bitcount.1000.par$Arquitetura, levels = bitcount.1000.par$Arquitetura[order(bitcount.1000.par$tempoparidade*bitcount.1000.par$cost)])
+
+bitcount.costbenefit.par.plot <- ggplot(bitcount.1000.par, aes(x=Arquitetura, y=cost*tempoparidade, fill=Arquitetura)) + 
+  labs(title = "Relação tempo-custo com paridade de frequência", x="Arquitetura", y="tempo*custo(ms*$)") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  geom_bar(stat = "identity") + 
+  scale_y_continuous(labels = scales::comma)
+
+bitcount.costbenefit.par.plot
+ggsave(bitcount.costbenefit.par.plot, filename = "./bitcount/bitcountcostbenefitpar.pdf")
+```
+
+```{r}
+bitcount.1000.pow <- bitcount[which(bitcount$entrada==1000),]
+bitcount.1000.pow$Arquitetura <- factor(bitcount.1000.par$Arquitetura, levels = bitcount.1000.pow$Arquitetura[order(bitcount.1000.pow$tempo.ms.*bitcount.1000.pow$power)])
+
+bitcount.costbenefit.pow.plot <- ggplot(bitcount.1000.pow, aes(x=Arquitetura, y=power*tempo.ms., fill=Arquitetura)) + 
+  labs(title = "Relação tempo-consumo energético para 1000 iterações", x="Arquitetura", y="tempo*consumo(ms*mW)") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  geom_bar(stat = "identity") + 
+  scale_y_continuous(labels = scales::comma)
+
+bitcount.costbenefit.pow.plot
+ggsave(bitcount.costbenefit.pow.plot, filename = "./bitcount/bitcountcostbenefitpow.pdf")
+```
+

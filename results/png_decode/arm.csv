@@ -1,7 +1,4 @@
-i.MX 6ULZ(Arm Cortex-A7)
-900MHz
+# i.MX 6ULZ(Arm Cortex-A7)
+# 900MHz
 entrada, ciclos, tempo(ms)
-113x135, 331679, 368.532
-512x512, 351312, 390.347
-65x68, 366522, 407.247
-82x110, 360148, 400.164
+10x10, 505675, 561.861
